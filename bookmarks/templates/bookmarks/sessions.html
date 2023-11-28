@@ -1,0 +1,280 @@
+{% extends 'users/base.html' %}
+{% load static %}
+{% block content %}
+    <div class="contain">
+        <h1>My Sessions</h1>
+    </div>
+    <div id="custom-context-menu">
+        <ul>
+            <li class="context-menu-options" id="rename-option"><i class="fa-solid fa-pen-to-square"></i><p>Rename</p></li>
+            <li class="context-menu-options" id="delete-option"><i class="fa-solid fa-trash"></i><p>Delete</p></li>
+            <li class="context-menu-options" id="new-tab-option"><i class="fa-solid fa-up-right-from-square"></i><p>Open in new tab</p></li>
+            <!-- Add other context menu options as needed -->
+        </ul>
+    </div>
+    <div class="grid-container">
+        {% for session in sessions %}
+            <div class="context-menu-trigger grid-item" data-object-id="{{ session.id }}" data-object-name="{{ session.name }}">
+                <a href="{% url 'session-detail' session.pk %}">
+                    <div title="{{ session.name }}" class="session-box">
+                        <img src="{% static 'bookmarks/ss2.png' %}" style="max-width: 100%; max-height: 100%;">
+                        <p>{{ session.name }}</p>
+                        <div class="session-bottom">
+                            <p>
+                                <i class="fa-solid fa-bookmark"></i>&nbsp;&nbsp;&nbsp;
+                                <small title="Saved on {{ session.created_at|date:'d/m/Y' }}">{{ session.created_at|date:"d/m/Y" }}</small>
+                            </p>
+                            <a title="" class="ellipsis-button" href="#">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </a>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% empty %}
+            <div class="">
+                <div class="session-box" style="width: 180px; margin-left: 2%;">
+                    <img src="{% static 'bookmarks/ss2.png' %}" style="max-width: 100%; max-height: 100%;">
+                    <p>No Session Saved Yet</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="pagination">
+        <span class="step-links">
+            {% if sessions.has_previous %}
+                <a href="?page=1">&laquo;</a>
+                <a href="?page={{ sessions.previous_page_number }}">&lsaquo;</a>
+            {% endif %}
+            <span class="current-page">
+                Page {{ sessions.number }} of {{ sessions.paginator.num_pages }}
+            </span>
+            {% if sessions.has_next %}
+                <a href="?page={{ sessions.next_page_number }}">&rsaquo;</a>
+                <a href="?page={{ sessions.paginator.num_pages }}">&raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+
+    <div id="modal2" class="modal2">
+        <div id="modal2-content" class="modal2-content">
+          
+        </div>
+    </div>
+{% endblock %}
+
+{% block secondary %}
+    <div class="center-elements">
+        <div class="big-card">
+            <div style="display: flex; justify-content: left;"><h2 style="margin: 0 0 5px 0;">Placeholder</h2></div>
+            <!-- <iframe width="100%" height="400" src="https://www.youtube.com/embed/QncohHTY_yo" title="The Golden State Warriors Made Their Decision" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe> -->
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.querySelectorAll('.ellipsis-button').forEach(function (button) {
+            button.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const customContextMenu = document.getElementById('custom-context-menu');
+                const objectId = this.closest('.context-menu-trigger').getAttribute('data-object-id');
+                const objectName = this.closest('.context-menu-trigger').getAttribute('data-object-name');
+                // const modal2 = document.getElementById('modal2');
+                var modal2 = $('#modal2');
+                // var modal2Content = document.getElementById('modal2-content');
+                var modal2Content = $('#modal2-content');
+
+                customContextMenu.style.display = 'block';
+                customContextMenu.style.left = e.pageX-120 + 'px';
+                customContextMenu.style.top = e.pageY + 'px';
+
+                // console.log(document.getElementById('delete-option'));
+
+                document.getElementById('rename-option').addEventListener('click', function () {
+                    modal2.show();
+                    modal2Content.html(`<p class="align-left">Please enter a new name for the item:</p><input id="rename-input" type="text" placeholder="New Name" value="${objectName}"><div class="button-container gm"><button class="cancel-button" id="cancel-button">Cancel</button><button class="ahead-button" id="rename-button">Rename</button></div><div id="rename-text" class="button-container gm" style="display: none;"><small>Renaming...</small></div>`);
+
+                    var inputField = document.getElementById('rename-input');
+
+                    inputField.focus();
+                    inputField.select();
+
+                    var cancelButton = document.getElementById('cancel-button');
+                    var renameButton = document.getElementById('rename-button');
+                    var renameText = document.getElementById('rename-text');
+
+                    $(document).on("click", function(event) {
+                        if (modal2.is(event.target)) {
+                            modal2Content.empty();
+                            modal2.hide();
+                        }
+                    })
+
+                    cancelButton.addEventListener('click', function () {
+                        modal2Content.empty();
+                        modal2.hide();
+                    })
+
+                    function handleRename() {
+                        if (inputField.value === "") {
+                            alert("Please do not leave this field empty.")
+                        } else if (inputField.value === objectName) {
+                            alert("Please enter a new name, not the old one. Please click on 'Cancel' if you don't want to change the name.")
+                        } else {
+                            renameText.style.display = 'flex';
+                            renameButton.style.cursor = 'not-allowed';
+                            cancelButton.style.cursor = 'not-allowed';
+                            // const url = `http://192.168.1.66:8000/rename_session/${objectId}/${inputValue}`
+                            const url = `/rename_session/${objectId}/${inputField.value}`
+
+                            fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRFToken': getCookie('csrftoken'),
+                                },
+                            })
+                                .then(response => {
+                                    if (response.ok) {
+                                        console.log('Succesful deletion');
+                                        location.reload();
+                                    } else {
+                                        console.error('Failed to delete the session');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('An error occurred:', error);
+                                })
+                        }
+                    }
+
+                    renameButton.addEventListener('click', handleRename);
+
+                    inputField.addEventListener('keyup', function (event) {
+                        if (event.keyCode === 13) {
+                            handleRename();
+                        }
+                    })
+
+
+
+                    // cancelButton.addEventListener('click', function () {
+                    //     var inputValue = document.getElementById('rename-input').value;
+                    //     console.log(inputValue);  
+                    // })
+                })
+                
+                // Handle option click events, e.g., delete action for the specific object
+                document.getElementById('delete-option').addEventListener('click', function () {
+                    // Handle the delete action here for the object with objectId
+                    
+                    modal2.show();
+                    modal2Content.html(`<p>Are you sure you want to delete ${objectName}?</p><div class="button-container"><button class="cancel-button" id="cancel-button">Cancel</button><button class="ahead-button" id="delete-button">Delete</button></div><div id="delete-text" class="button-container gm" style="display: none;"><small>Deleting...</small></div>`);
+
+                    var cancelButton = document.getElementById('cancel-button');
+                    var deleteButton = document.getElementById('delete-button');
+                    var deleteText = document.getElementById("delete-text");
+
+                    $(document).on("click", function(event) {
+                        if (modal2.is(event.target)) {
+                            modal2Content.empty();
+                            modal2.hide();
+                        }
+                    })
+
+                    cancelButton.addEventListener('click', function () {
+                        modal2Content.empty();
+                        modal2.hide();
+                    })
+
+                    const url = `/delete_session/${objectId}`;
+
+                    deleteButton.addEventListener('click', function () {
+                        deleteText.style.display = 'flex';
+                        deleteButton.style.cursor = 'not-allowed';
+                        cancelButton.style.cursor = 'not-allowed';
+                        fetch(url, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRFToken': getCookie('csrftoken'),
+                            },
+                        })
+                            .then(response => {
+                                if (response.ok) {
+                                    console.log('Succesful deletion');
+                                    location.reload();
+                                } else {
+                                    console.error('Failed to delete the session');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('An error occurred:', error);
+                            })
+                    })
+
+                    // console.log('Delete option clicked for object with ID: ' + objectId);
+                    // You can make an AJAX request to delete the selected object using Django views.
+                });
+
+                document.getElementById('new-tab-option').addEventListener('click', function () {
+                    const url = `/session_detail/${objectId}`;
+                    window.open(url);
+                })
+
+                function getCookie(name) {
+                    var value = "; "+document.cookie;
+                    var parts = value.split("; "+ name + "=");
+                    if (parts.length === 2) return parts.pop().split(";").shift();
+                }
+
+                // customContextMenu.addEventListener('click', function (e) {
+                //     e.stopPropagation();
+                // })
+
+                // Close the context menu when clicking anywhere else
+                document.addEventListener('click', function () {
+                    if (customContextMenu.style.display === 'block') {
+                        // console.log('nice');
+                        customContextMenu.style.display = 'none';
+                    }
+                })
+            });
+        });
+
+    </script>
+    <!-- <script>
+        document.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const customContextMenu = document.getElementById('custom-context-menu');
+
+            // Check if the right-click event was triggered on a context-menu-trigger element
+            if (e.target.classList.contains('context-menu-trigger')) {
+                const objectId = e.target.getAttribute('data-object-id');
+                customContextMenu.style.display = 'block';
+                customContextMenu.style.left = e.pageX + 'px';
+                customContextMenu.style.top = e.pageY + 'px';
+
+                // Handle option click events, e.g., delete action for the specific object
+                document.getElementById('delete-option').addEventListener('click', function () {
+                    // Handle the delete action here for the object with objectId
+                    console.log('Delete option clicked for object with ID: ' + objectId);
+                    // You can make an AJAX request to delete the selected object using Django views.
+                });
+
+                // Close the context menu when clicking anywhere else
+                document.addEventListener('click', function () {
+                    if (customContextMenu.style.display === 'block') {
+                        // console.log('nice');
+                        customContextMenu.style.display = 'none';
+                    }
+                })
+                
+                // document.addEventListener('click', function () {
+                //     customContextMenu.style.display = 'none';
+                // });
+            }
+        });
+    </script> -->
+{% endblock %}

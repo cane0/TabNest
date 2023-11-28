@@ -1,0 +1,50 @@
+<!-- search_results.html -->
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block content %}
+
+    <div class="contain">
+        <h2>Search Results for "{{ query }}"</h2>
+    </div>
+
+    {% for tab in tabs %}
+        <div class="contain gm">
+                    
+            <div class="site-space">
+                <div class="inside-space">
+                    <div onclick="openTab('{{ tab.url }}')" class="img-space site-space-division site-space-division-center">
+                        <img src="{{ tab.logo }}" alt="{{ tab.title }}" style="width: 30px; height: auto;">
+                    </div>
+                    <div class="site-space-divisions">
+                        <a target="_blank" class="btext" href="{{ tab.url }}">{{ tab.title }}</a>
+                    </div>
+                    <div class="site-space-divisions">
+                        <a class="btext" href="{% url 'session-detail' tab.session.pk %}">Session: <b><u>{{ tab.session.name }}</u></b></a>
+                        <!-- <input type="checkbox" onchange="toggleCheckboxes()" class="others openable" id="tab-{{ tab.tab_id }}" value="{{ tab.url }}"> -->
+                    </div>
+                    <div class="site-space-division site-space-division-end icons-container">
+                        <input type="checkbox" onchange="toggleCheckboxes()" class="others openable" id="tab-{{ tab.tab_id }}" value="{{ tab.url }}">
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    {% empty %}
+    <div class="contain">
+        <div>
+            <h2>Oops... We are not able to find your search request. Check errors and try again.</h2>
+            <img width="50%" src="{% static 'bookmarks/idk.png' %}" alt="oops image">
+        </div>
+    </div>
+    {% endfor %}
+
+    
+    <!-- <ul>
+        {% for tab in tabs %}
+            <li>{{ tab.title }} - {{ tab.url }}</li>
+        {% empty %}
+            <li>No results found</li>
+        {% endfor %}
+    </ul> -->
+{% endblock %}

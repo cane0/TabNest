@@ -1,0 +1,187 @@
+{% extends 'users/base.html' %}
+{% block content %}
+
+<!-- <p>Hello World</p>
+<p>Authenticated: {{ user.is_authenticated }}</p>
+<p>Username: {{ user.username }}</p>
+<p>Value: {{ user.unique_auth.value }}</p>
+<img src="{{ user.profile.image.url }}"> -->
+
+    <div class="contain">
+        <h1>Welcome to TabNest</h1>
+    </div>
+
+    <div class="center-elements">
+        <div class="image-card">
+            <img src="{{ user.profile.image.url }}" alt="Card Image">
+            <div class="card-content">
+                <div>
+                <h2>Hello {{ user.username }}</h2>
+                <p>Unique Authentication Code: {{ user.unique_auth.value }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="modif-card">
+            <div class="card-content2">
+                <div>
+                    <h2>Click to view <a style="color: #212529; text-decoration: underline;" href="{% url 'sessions' user.unique_auth.value %}">saved sessions</a></h2>
+                    
+                </div>
+                <hr class="box-update">
+                <div>
+                    <p class="session-page-container">
+                        Click the button to generate a new Unique Authentication Code<a href="{% url 'update' %}"><i class="fa-solid fa-rotate"></i></a>
+                    </p>
+                    <br/>
+                    <!-- <p class="session-page-container">Upload a new profile picture:</p> -->
+                    <form id="image-form" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <fieldset class="box-update">
+                            <legend>Upload a new profile picture</legend>
+                            {{ p_form.image }}                                
+                            <div style="border: 1px solid black; background-color: #212529; color: white; cursor: pointer; width: fit-content; padding: 5px; display: none;" id="opencropbox" onclick="OpenModal()">Open Crop Box</div>
+                            <!-- <button id="openModalBtn" style="margin-top: 15px;">Upload</button>                          -->
+                        </fieldset>
+                    </form>
+
+                    <div id="modal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-top">
+                                <p>Crop Image</p>
+                                <span class="close" id="closeModalBtn">&times;</span>
+                            </div>
+                            <div class="modal-middle">
+                                <div class="center-content">
+                                    <div id="image-box" class="crop-field">
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-bottom">
+                                <p></p>
+                                <button id="confirm-btn" type="button">Upload</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="modal3" class="modal2">
+                        <div id="modal2-content" class="modal2-content">
+                          
+                        </div>
+                    </div>
+
+                    <div id="modal2" class="modal2">
+                        <div class="modal2-content">
+                          <p>Image updating...</p>
+                        </div>
+                    </div>
+
+                    <!-- <div id="image-box"></div> -->
+                    <!-- <button class="not-visible" id="confirm-btn">Upload</button> -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}
+
+{% block secondary %}
+    <div class="center-elements">
+        <div class="big-card">
+            <div style="display: flex; justify-content: left;"><h2 style="margin: 0 0 5px 0;">Placeholder</h2></div>
+            <!-- <iframe width="100%" height="400" src="https://www.youtube.com/embed/QncohHTY_yo" title="The Golden State Warriors Made Their Decision" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe> -->
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        const modal = document.getElementById('modal');
+        const openModalBtn = document.getElementById('openModalBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        function OpenModal () {
+            modal.style.display = 'block';
+        }
+
+        function CloseModal () {
+            modal.style.display = 'none';
+        }
+
+        closeModalBtn.addEventListener('click', () => {
+            CloseModal();
+        })
+
+        // openModalBtn.addEventListener('click', () => {
+        //     openModal();
+        // })
+
+        window.addEventListener('click', (event) => {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+    </script>
+
+    <script>
+
+    </script>
+
+    <script>
+        const imageBox = document.getElementById('image-box');
+        const imageForm = document.getElementById('image-form');
+        const confirmBtn = document.getElementById('confirm-btn');
+        const input = document.getElementById('id_image');
+        const opencropbox = document.getElementById('opencropbox');
+        const modal2 = document.getElementById('modal2');
+
+        const csrf = document.getElementsByName('csrfmiddlewaretoken');
+        
+        input.addEventListener('change', function () {
+            // console.log('changed');
+
+            OpenModal();
+            opencropbox.style.display = 'block';
+
+            const img_data = input.files[0];
+            const url = URL.createObjectURL(img_data)
+            imageBox.innerHTML = `<img src="${url}" id="image" width="100px;">`
+
+            var $image = $('#image');
+
+            // console.log('js', $image);
+
+            $image.cropper({
+                aspectRatio: 1,
+                viewMode: 1,
+            });
+
+            var cropper = $image.data('cropper');
+            confirmBtn.addEventListener('click', () => {
+                cropper.getCroppedCanvas().toBlob((blob)=>{
+                    // CloseModal();
+                    modal2.style.display = 'block';
+                    const fd = new FormData();
+                    fd.append('csrfmiddlewaretoken', csrf[0].value);
+                    fd.append('file', blob, 'profile_image.png');
+                    fetch("{% url 'profile' %}", {
+                        method: 'POST',
+                        body: fd,
+                    })
+                        .then((response) => {
+                            if (response.ok) {
+                                console.log("Image uploaded successfully");
+                                window.location.reload();
+                            } else {
+                                console.error('Image update failed');
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Image update failed', error);
+                        })
+                })
+            })
+        })
+    </script>
+{% endblock %}
